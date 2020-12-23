@@ -1,11 +1,19 @@
 //jshint esversion:6
-require('dotenv').config();//only to require it does not need a constatn must be at the top
+require("dotenv").config(); //only to require it does not need a constatn must be at the top
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
+
 //encryption
-const encrypt = require("mongoose-encryption");
+//const encrypt = require("mongoose-encryption");
+
+//hashing using md5
+//const md5 = require('md5');
+
+//hashing using bcrypt
+const bcrypt = require("bcrypt");
+const saltrounds = 10;
 
 const app = express();
 
@@ -27,8 +35,8 @@ const userSchema = new mongoose.Schema({
   password: String,
 });
 
-
-userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedFields: ["password"] });
+//pluging for user schema that will add encryption
+//userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedFields: ["password"] });
 
 //model
 const User = new mongoose.model("User", userSchema);
@@ -52,17 +60,19 @@ app.get("/register", function (req, res) {
 if the user needs to register we will create a new document and save it with the users information
  */
 app.post("/register", function (req, res) {
-  const newUser = new User({
-    email: req.body.username,
-    password: req.body.password,
-  });
+  bcrypt.hash(req.body.password, saltrounds, function (err, hash) {
+    const newUser = new User({
+      email: req.body.username,
+      password: hash,
+    });
 
-  newUser.save(function (err) {
-    if (err) {
-      console.log(err);
-    } else {
-      res.render("secrets");
-    }
+    newUser.save(function (err) {
+      if (err) {
+        console.log(err);
+      } else {
+        res.render("secrets");
+      }
+    });
   });
 });
 /*will check our user database agains tthe users login ingormation inputed
@@ -77,9 +87,9 @@ app.post("/login", function (req, res) {
       console.log(err);
     } else {
       if (foundUser) {
-        if (foundUser.password == password) {
+        bcrypt.compare(password, foundUser.password, function (err, result) {
           res.render("secrets");
-        }
+        });
       }
     }
   });
@@ -91,5 +101,9 @@ app.listen(3000, function () {
 
 /*
 *************************Notes***************************
+with encryption the password is securea as long as no one knows about the key to
+decrypt the password.
 
+but  with hashing they cannot reverse the hash but that does not mean hackers
+cant hack users passwords.
 */
