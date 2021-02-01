@@ -37,8 +37,8 @@ app.use(
     saveUninitialized: false,
   })
 );
-app.use(passport.initialize());//setups passport for to use for authenthication
-app.use(passport.session());//telling passport to deal with the sessions
+app.use(passport.initialize()); //setups passport for to use for authenthication
+app.use(passport.session()); //telling passport to deal with the sessions
 
 mongoose.connect("mongodb://localhost:27017/userDB", {
   useNewUrlParser: true,
@@ -106,10 +106,10 @@ app.get("/secrets", function (req, res) {
   }
 });
 
-app.get("/logout", function(req, res){
+app.get("/logout", function (req, res) {
   req.logout();
-  res.redirect("/")
-})
+  res.redirect("/");
+});
 
 /*
 if the user needs to register we will create a new document and save it with the users information
