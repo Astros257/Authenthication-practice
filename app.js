@@ -22,7 +22,7 @@ const passportLocalMongoose = require("passport-local-mongoose");
 
 const app = express();
 
-//this is how get access to the varibles in teh .env file
+//this is how get access to the varibles in the .env file
 //console.log(process.env.SECRET);
 
 app.use(express.static("public"));
@@ -37,8 +37,8 @@ app.use(
     saveUninitialized: false,
   })
 );
-app.use(passport.initialize());
-app.use(passport.session());
+app.use(passport.initialize());//setups passport for to use for authenthication
+app.use(passport.session());//telling passport to deal with the sessions
 
 mongoose.connect("mongodb://localhost:27017/userDB", {
   useNewUrlParser: true,
@@ -66,8 +66,20 @@ userSchema.plugin(passportLocalMongoose);
 const User = new mongoose.model("User", userSchema);
 
 //usign passport in the app
+
+/*
+local strategy to authenticate users using their username passowrd and also to serialize and deseralize 
+our users
+*/
 passport.use(User.createStrategy());
 
+/*
+the serialize and deseriallize are only necassary when using sessions.
+
+when we seralize our user it create the cookie and stuffs the message namly our users identifactions into the cookie
+
+when we desserialize it basically allows passport to crumble the cookie to discover the message inside which is who this user is.
+*/
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
