@@ -45,17 +45,31 @@ mongoose.connect("mongodb://localhost:27017/userDB", {
   useUnifiedTopology: true,
 });
 
+//fixing deprecation warning
+mongoose.set("useCreateIndex", true);
+
 //schema
 const userSchema = new mongoose.Schema({
   email: String,
   password: String,
 });
 
+//this is what we will use to hash and salt passowrd and to save
+//our users into out mongodb database
+//will do alot of the heavy lifting for us
+userSchema.plugin(passportLocalMongoose);
+
 //pluging for user schema that will add encryption
 //userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedFields: ["password"] });
 
 //model
 const User = new mongoose.model("User", userSchema);
+
+//usign passport in the app
+passport.use(User.createStrategy());
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 //rendering teh home page where the user can go to the login page or the register page
 app.get("/", function (req, res) {
@@ -72,15 +86,57 @@ app.get("/register", function (req, res) {
   res.render("register");
 });
 
+app.get("/secrets", function (req, res) {
+  if (req.isAuthenticated()) {
+    res.render("secrets");
+  } else {
+    res.redirect("/login");
+  }
+});
+
+app.get("/logout", function(req, res){
+  req.logout();
+  res.redirect("/")
+})
+
 /*
 if the user needs to register we will create a new document and save it with the users information
  */
-app.post("/register", function (req, res) {});
+app.post("/register", function (req, res) {
+  User.register(
+    { username: req.body.username },
+    req.body.password,
+    function (err, user) {
+      if (err) {
+        console.log(err);
+      } else {
+        passport.authenticate("local")(req, res, function () {
+          res.redirect("/secrets");
+        });
+      }
+    }
+  );
+});
 
 /*will check our user database agains tthe users login ingormation inputed
 and if it matches up againts the email then we check the password, once we have declared weather 
 the information is correct we will show the secrets page to the user. */
-app.post("/login", function (req, res) {});
+app.post("/login", function (req, res) {
+  const user = new User({
+    username: req.body.username,
+    password: req.body.password,
+  });
+
+  req.logIn(user, function (err) {
+    if (err) {
+      console.log(err);
+    } else {
+      passport.authenticate("local")(req, res, function () {
+        res.redirect("/secrets");
+      });
+    }
+  });
+});
 
 app.listen(3000, function () {
   console.log("Server started on port 3000");
