@@ -10,6 +10,9 @@ const session = require("express-session");
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 
+//OAUTH
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+
 //encryption
 //const encrypt = require("mongoose-encryption");
 
@@ -82,6 +85,23 @@ when we desserialize it basically allows passport to crumble the cookie to disco
 */
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
+
+//OAuth
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
+      callbackURL: "http://localhost:3000/auth/google/secrets",
+      userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
+    },
+    function (accessToken, refreshToken, profile, cb) {
+      User.findOrCreate({ googleId: profile.id }, function (err, user) {
+        return cb(err, user);
+      });
+    }
+  )
+);
 
 //rendering teh home page where the user can go to the login page or the register page
 app.get("/", function (req, res) {
